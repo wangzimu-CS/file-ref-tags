@@ -1,4 +1,4 @@
-export const TEMPLATE = `<!DOCTYPE html>
+export const TEMPLATE1 = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1190,3 +1190,80 @@ export const TEMPLATE = `<!DOCTYPE html>
     </script>
 </body>
 </html>`;
+
+export const TEMPLATE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Ref Tags</title>
+    <style>
+        /* VS Code会自动在webview中注入CSS变量，我们直接使用它们，并提供默认值作为后备 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--vscode-editor-background, #1e1e1e);
+            color: var(--vscode-editor-foreground, #d4d4d4);
+            font-size: 12px;
+            font-weight: 400;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            padding: 6px 2px;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 12px);
+            overflow-y: auto;
+        }
+        h1 {
+            font-size: 13px;
+            margin: 0 0 8px 0;
+            font-weight: 500;
+            color: var(--vscode-foreground, #cccccc);
+            padding: 0 6px;
+            border-bottom: 1px solid var(--vscode-panel-border, #3e3e42);
+            padding-bottom: 4px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 24px 0;
+            color: var(--vscode-descriptionForeground, #858585);
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+    sjfsadklfjlsadjflkasjlfjaslkjflksajflksajdfklsdjflksd
+        <h1>File References</h1>
+        <div id="empty-state" class="empty-state">
+            <iframe
+              id="inlineFrameExample"
+              title="Inline Frame Example"
+              width="100%"
+              height="60%"
+              src="http://localhost:3002/llm">
+            </iframe>
+        </div>
+        <ul id="references-list" class="references-list"></ul>
+        <div class="actions-bar">
+            <button id="show-storage-btn" class="action-btn">Show Storage (00)Location</button>
+        </div>
+    </div>
+
+    <script>
+
+    </script>
+</body>
+</html>`;
+
+              // src="https://www.openstreetmap.org/export/embed.html?bbox=-0.004017949104309083%2C51.47612752641776%2C0.00030577182769775396%2C51.478569861898606&amp;layer=mapnik">
+              // src="http://localhost:3002/llm">
+
+

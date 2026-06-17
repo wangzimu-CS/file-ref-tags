@@ -73,6 +73,11 @@
         "command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
         "title": "复制链接（项目级路径+代码片段）",
         "category": "FileRefTags"
+      },
+      {
+        "command": "file-ref-tags.catCodiconsShow",
+        "title": "图标界面",
+        "category": "FileRefTags"
       }
     ],
     "menus": {
@@ -130,6 +135,10 @@
         {
           "command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
           "group": "file-ref-tags@10"
+        },
+        {
+          "command": "file-ref-tags.catCodiconsShow",
+          "group": "file-ref-tags@11"
         }
       ]
     },
@@ -201,5 +210,8 @@
     "typescript": "^5.9.3",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2"
-  }
+  },
+  "dependencies": {
+		"@vscode/codicons": "0.0.20"
+	}
 }
