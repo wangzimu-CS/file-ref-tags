@@ -1240,7 +1240,6 @@ export const TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
     <div class="container">
-    sjfsadklfjlsadjflkasjlfjaslkjflksajflksajdfklsdjflksd
         <h1>File References</h1>
         <div id="empty-state" class="empty-state">
             <iframe
@@ -1248,7 +1247,7 @@ export const TEMPLATE = `<!DOCTYPE html>
               title="Inline Frame Example"
               width="100%"
               height="60%"
-              src="http://localhost:3002/llm">
+              src="https://www.openstreetmap.org/export/embed.html?bbox=-0.004017949104309083%2C51.47612752641776%2C0.00030577182769775396%2C51.478569861898606&amp;layer=mapnik">
             </iframe>
         </div>
         <ul id="references-list" class="references-list"></ul>

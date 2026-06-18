@@ -21,7 +21,10 @@ export class CatCodiconsPanel {
 		const panel = vscode.window.createWebviewPanel(
 			CatCodiconsPanel.viewType,
 			"Cat Codicons",
-			column || vscode.ViewColumn.One
+			column || vscode.ViewColumn.One,
+      {
+        enableScripts: true, // 关键：允许webview内执行JS，不加就会拦截脚本
+      }
 		);
 
 		panel.webview.html = this._getHtmlForWebview(panel.webview, extensionUri);
@@ -32,8 +35,7 @@ export class CatCodiconsPanel {
 		// Get resource paths
 		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'styles.css'));
 		const codiconsUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'node_modules', '@vscode/codicons', 'dist', 'codicon.css'));
-
-		return `<!DOCTYPE html>
+    let useHtml =  `<!DOCTYPE html>
 			<html lang="en">
 			<head>
 				<meta charset="UTF-8">
@@ -380,6 +382,82 @@ export class CatCodiconsPanel {
 				</div>
 			</body>
 			</html>`;
-	}
+    
+    useHtml = `<!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>File Ref Tags</title>
+                    <style>
+                        /* VS Code会自动在webview中注入CSS变量，我们直接使用它们，并提供默认值作为后备 */
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: var(--vscode-editor-background, #1e1e1e);
+                            color: var(--vscode-editor-foreground, #d4d4d4);
+                            font-size: 12px;
+                            font-weight: 400;
+                            height: 100vh;
+                            overflow: hidden;
+                        }
+                        .container {
+                            padding: 6px 2px;
+                            display: flex;
+                            flex-direction: column;
+                            height: calc(100vh - 12px);
+                            overflow-y: auto;
+                        }
+                        h1 {
+                            font-size: 13px;
+                            margin: 0 0 8px 0;
+                            font-weight: 500;
+                            color: var(--vscode-foreground, #cccccc);
+                            padding: 0 6px;
+                            border-bottom: 1px solid var(--vscode-panel-border, #3e3e42);
+                            padding-bottom: 4px;
+                        }
+                        .empty-state {
+                            text-align: center;
+                            padding: 24px 0;
+                            color: var(--vscode-descriptionForeground, #858585);
+                            flex: 1;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        }
+
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>File References</h1>
+                        <div id="empty-state" class="empty-state">
+                            <iframe
+                              id="inlineFrameExample"
+                              title="Inline Frame Example"
+                              width="100%"
+                              height="100%"
+                              src="http://127.0.0.1:5501/web/viewer.html?file=MP257%E6%99%BA%E8%83%BD%E6%9E%9C%E8%94%AC%E7%A7%B0%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B%E9%83%A8%E5%88%86%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E9%83%A8%E7%BD%B2.pdf#page=8">
+                            </iframe>
+                        </div>
+                        <ul id="references-list" class="references-list"></ul>
+                        <div class="actions-bar">
+                            <button id="show-storage-btn" class="action-btn">Show Storage (00)Location</button>
+                        </div>
+                    </div>
+
+                    <script>
+
+                    </script>
+                </body>
+                </html>`;
+
+    return useHtml;
+    // src="http://localhost:3002/llm">
+    // src="http://127.0.0.1:5501/web/viewer.html?file=MP257%E6%99%BA%E8%83%BD%E6%9E%9C%E8%94%AC%E7%A7%B0%E7%9B%AE%E6%A0%87%E6%A3%80%E6%B5%8B%E9%83%A8%E5%88%86%E7%9A%84%E5%AE%9E%E7%8E%B0%E4%B8%8E%E9%83%A8%E7%BD%B2.pdf#page=8">
+    // src="http://127.0.0.1:5501/web/viewer.html">
+    }
 }
 
