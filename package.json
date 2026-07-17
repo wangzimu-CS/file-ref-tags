@@ -188,7 +188,11 @@
     "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
     "check-types": "tsc --noEmit",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "dev:0": "pnpm run -F vue-view-demo dev",
+    "dev:1": "pnpm run -F vue-view-demo dev",
+    "build:0": "pnpm run -F vue-view-demo build",
+    "build:1": "pnpm run -F vue-view-demo build"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

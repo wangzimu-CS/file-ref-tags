@@ -225,7 +225,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 		};
 
 		// Set the webview HTML content
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+		// webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+		webviewView.webview.html = this._getVueForWebview(webviewView.webview);
 
 		// Handle messages from the webview
 		webviewView.webview.onDidReceiveMessage(
@@ -287,7 +288,8 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 			if (this._webviewView?.visible) {
 				// 重新设置HTML内容以应用新的主题变量
 				// CSS变量会自动更新，但重新设置HTML可以确保所有样式都正确应用
-				this._webviewView.webview.html = this._getHtmlForWebview(this._webviewView.webview);
+				// this._webviewView.webview.html = this._getHtmlForWebview(this._webviewView.webview);
+				this._webviewView.webview.html = this._getVueForWebview(webviewView.webview);
 				// 重新发送引用数据以恢复状态
 				setTimeout(() => {
 					this._sendReferences();
@@ -400,8 +402,30 @@ class FileRefTagsViewProvider implements vscode.WebviewViewProvider {
 
 	// 生成webview HTML
 	private _getHtmlForWebview(webview: vscode.Webview): string {
+		// return TEMPLATE;
 		return TEMPLATE;
+		// return this._getVueForWebview(webview);
 	}
+
+	private _getVueForWebview(webview: vscode.Webview) {
+        // 打包的前端页面资源的路径
+        const guiSidebarPath = vscode.Uri.joinPath(this._extensionUri, '/vue-view-demo/dist');
+        // 前端页面的入口文件
+        const indexPath = vscode.Uri.joinPath(guiSidebarPath, '/index.html');
+        let indexHtml = fs.readFileSync(indexPath.fsPath, 'utf-8');
+        const matchLinks = /(href|src)="([^"]*)"/g;
+        const toUri = (_: string, prefix: 'href' | 'src', link: string) => {
+            if (link === '#') {
+                return `${prefix}="${link}"`;
+            }
+            const _path = path.join(guiSidebarPath.fsPath, link);
+            const uri = vscode.Uri.file(_path);
+            return `${prefix}="${webview.asWebviewUri(uri)}"`;
+        };
+        // 将本地资源路径替换成 webview 可以加载的资源路径
+        indexHtml = indexHtml.replace(matchLinks, toUri);
+        return indexHtml;
+    }
 
 	// 使用层级搜索跳转到全局代码片段
 	private async _jumpToGlobalSnippetWithHierarchy(reference: ReferenceItem): Promise<void> {
