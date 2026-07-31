@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<base href="$$literal-vsuri$$/index.html" />
+		<script type="text/javascript">
+			var log;
+			var editorUi;
+			(() => {
+				const api = (window.VsCodeApi = acquireVsCodeApi());
+				function sendToVsCode(msg) {
+					api.postMessage(JSON.stringify(msg));
+				}
+				log = function log(...msg) {
+					sendToVsCode({ event: "log", body: msg });
+				};
+
+				// Fix draw.io tries to access unavailable localStorage
+				// Replace it with a bridged version
+				const storage = $$localStorage$$;
+				const bridgedLocalStorage = {
+					getItem: function (key) {
+						log("localStorage: get " + key);
+						return storage[key];
+					},
+					setItem: function (key, val) {
+						log("localStorage: set " + key + " to " + val);
+						storage[key] = val;
+						sendToVsCode({
+							event: "updateLocalStorage",
+							newLocalStorage: storage,
+						});
+					},
+					removeItem: function (key) {
+						log("localStorage: remove " + key);
+						delete storage[key];
+					},
+				};
+				Object.defineProperty(window, "localStorage", {
+					value: bridgedLocalStorage,
+				});
+
+				// Fix draw.io tries to access unavailable cookie prop
+				Object.defineProperty(document, "cookie", { value: "" });
+
+				// Create a message bridge object that draw.io will use
+				// as its embedMessageSource for both receiving and sending
+				// messages. This replaces the old window.opener fake +
+				// message re-dispatch hack.
+				const vscodeBridge = {
+					postMessage: (msg) => api.postMessage(msg),
+				};
+
+				// Set as window.opener for backward compatibility with
+				// plugins that check evt.source === window.opener
+				Object.defineProperty(window, "opener", {
+					value: vscodeBridge,
+				});
+
+				// Intercept VS Code chords in the CAPTURE phase, before draw.io's
+				// many keydown listeners, and forward them to the extension. The old
+				// mxEvent patch only suppressed these for draw.io but never delivered
+				// them to the workbench, so Ctrl/Cmd+P was swallowed.
+				window.addEventListener(
+					"keydown",
+					function (e) {
+						var mod = e.ctrlKey || e.metaKey;
+						if (!mod || e.altKey) return;
+						var k = (e.key || "").toLowerCase();
+						var command = null;
+						if (k === "p" && e.shiftKey) {
+							command = "workbench.action.showCommands";
+						} else if (k === "p" && !e.shiftKey) {
+							command = "workbench.action.quickOpen";
+						}
+						if (command) {
+							e.preventDefault();
+							e.stopImmediatePropagation();
+							sendToVsCode({ event: "vscodeShortcut", command: command });
+						}
+					},
+					true
+				);
+
+				// Give each editor instance a unique cell-ID prefix so new cells from
+				// different editors don't collide on the same incrementing IDs (which
+				// breaks the 3-way merge — same ID, different shape). draw.io sets this
+				// in fileLoaded for real files, but the embed 'load' path doesn't, so we
+				// patch createId to assign one lazily when the prefix is still empty.
+				(function () {
+					function patchPrefix() {
+						if (
+							typeof mxGraphModel === "undefined" ||
+							typeof Editor === "undefined" ||
+							typeof Editor.guid !== "function"
+						) {
+							setTimeout(patchPrefix, 50);
+							return;
+						}
+						if (mxGraphModel.prototype.__vscodeCellPrefix) return;
+						mxGraphModel.prototype.__vscodeCellPrefix = true;
+						var origCreateId = mxGraphModel.prototype.createId;
+						mxGraphModel.prototype.createId = function () {
+							if (this.prefix == null || this.prefix === "") {
+								this.prefix = Editor.guid() + "-";
+							}
+							return origCreateId.apply(this, arguments);
+						};
+					}
+					patchPrefix();
+				})();
+
+				window.addEventListener("message", function (evt) {
+					if (evt.source !== vscodeBridge) {
+						let evtData = evt.data;
+						if (evtData) {
+							try {
+								var dataObj = JSON.parse(evtData);
+							} catch (e) {}
+						}
+
+						if (dataObj) {
+							if (
+								dataObj.action === "export" &&
+								editorUi.fileNode
+							) {
+								// fix default export settings
+
+								var scale = Number.parseFloat(
+									editorUi.fileNode.getAttribute("scale")
+								);
+								if (!Number.isNaN(scale)) {
+									dataObj.scale = scale;
+								}
+
+								var border = Number.parseFloat(
+									editorUi.fileNode.getAttribute("border")
+								);
+								if (!Number.isNaN(border)) {
+									dataObj.border = border;
+								}
+							}
+							evtData = JSON.stringify(dataObj);
+						}
+
+						// Re-emit messages with the bridge as source
+						const fakedEvt = new Event("message");
+						fakedEvt.source = vscodeBridge;
+						fakedEvt.data = evtData;
+
+						window.dispatchEvent(fakedEvt);
+
+						evt.stopPropagation();
+						evt.preventDefault();
+					}
+				});
+			})();
+
+			var appearance = parseInt($$appearance$$),
+				theme = $$theme$$,
+				// "auto" when appearance/theme follows the system, so draw.io tracks
+				// OS dark-mode changes live (matchMedia); otherwise a fixed "0"/"1".
+				dark = $$dark$$;
+
+			var urlParams = {
+				embed: "1",
+				configure: "1",
+				proto: "json",
+				ui: theme,
+				dark: dark,
+				"high-contrast": appearance & 2 ? "1" : "0",
+				lang: $$lang$$,
+				// noSaveBtn=0 shows a plain "Save" button (noSaveBtn=1 would make
+				// draw.io show "Save & Exit" instead). Exit is handled by closing the
+				// editor tab, so noExitBtn=1 keeps the separate Exit button hidden.
+				noSaveBtn: "0",
+				noExitBtn: "1",
+				chrome: $$chrome$$,
+				get ["svg-warning"]() {
+					return editorUi.fileNode.getAttribute(
+						"disableSvgWarning"
+					) === "true"
+						? "0"
+						: "1";
+				},
+			};
+
+			// Checks for local storage
+			var isLocalStorage = true;
+
+			function mxscript(src, onLoad, id, dataAppKey, noWrite) {
+				if (onLoad != null || noWrite) {
+					var s = document.createElement("script");
+					s.setAttribute("type", "text/javascript");
+					s.setAttribute("src", src);
+					var r = false;
+
+					if (id != null) {
+						s.setAttribute("id", id);
+					}
+
+					if (dataAppKey != null) {
+						s.setAttribute("data-app-key", dataAppKey);
+					}
+
+					if (onLoad != null) {
+						s.onload = s.onreadystatechange = function () {
+							if (
+								!r &&
+								(!this.readyState ||
+									this.readyState == "complete")
+							) {
+								r = true;
+								onLoad();
+							}
+						};
+					}
+
+					var t = document.getElementsByTagName("script")[0];
+
+					if (t != null) {
+						t.parentNode.insertBefore(s, t);
+					}
+				} else {
+					document.write(
+						'<script src="' +
+							src +
+							'"' +
+							(id != null ? ' id="' + id + '" ' : "") +
+							(dataAppKey != null
+								? ' data-app-key="' + dataAppKey + '" '
+								: "") +
+							"></scr" +
+							"ipt>"
+					);
+				}
+			}
+
+			function mxinclude(src) {
+				var g = document.createElement("script");
+				g.type = "text/javascript";
+				g.async = true;
+				g.src = src;
+
+				var s = document.getElementsByTagName("script")[0];
+				s.parentNode.insertBefore(g, s);
+			}
+		</script>
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+		/>
+		<link rel="stylesheet" type="text/css" href="styles/grapheditor.css" />
+		<link
+			rel="stylesheet"
+			media="(forced-colors: active)"
+			href="styles/high-contrast.css"
+			id="high-contrast-stylesheet"
+		/>
+		<link rel="manifest" href="images/manifest.json" />
+		<style type="text/css">
+			body {
+				overflow: hidden;
+				padding: 0;
+			}
+
+			div.picker {
+				z-index: 10007;
+			}
+
+			.geSidebarContainer .geTitle input {
+				font-size: 8pt;
+				color: #606060;
+			}
+
+			.geBlock {
+				z-index: -3;
+				margin: 100px;
+				margin-top: 40px;
+				margin-bottom: 30px;
+				padding: 20px;
+				text-align: center;
+				min-width: 50%;
+			}
+
+			.geBlock h1,
+			.geBlock h2 {
+				margin-top: 0px;
+				padding-top: 0px;
+			}
+
+			.geEditor * {
+				color: light-dark(var(--text-color), var(--dark-text-color));
+				scrollbar-color: light-dark(#e2e2e2, #4b4b4b)
+					light-dark(#fbfbfb, var(--dark-panel-color));
+			}
+
+			.geEditor *:not(.geScrollable)::-webkit-scrollbar {
+				width: 10px;
+				height: 10px;
+			}
+
+			.geEditor ::-webkit-scrollbar-track {
+				background-clip: padding-box;
+				border: solid transparent;
+				border-width: 1px;
+			}
+
+			.geEditor ::-webkit-scrollbar-corner {
+				background-color: transparent;
+			}
+
+			.geEditor ::-webkit-scrollbar-thumb {
+				background-color: rgba(0, 0, 0, 0.1);
+				background-clip: padding-box;
+				border: solid transparent;
+				border-radius: 10px;
+			}
+
+			.geEditor ::-webkit-scrollbar-thumb:hover {
+				background-color: rgba(0, 0, 0, 0.4);
+			}
+
+			.geTemplate {
+				border: 1px solid transparent;
+				display: inline-block;
+				_display: inline;
+				vertical-align: top;
+				border-radius: 3px;
+				overflow: hidden;
+				font-size: 14pt;
+				cursor: pointer;
+				margin: 5px;
+			}
+		</style>
+		<script src="js/PreConfig.js"></script>
+		<script src="js/app.min.js"></script>
+		<!--
+			Do NOT preload extensions.min.js / stencils.min.js / shapes-14-6-5.min.js
+			here: draw.io's App.main loads them itself via App.loadScripts unless
+			urlParams['dev']=='1' or EditorUi.isElectronApp (neither is true in a
+			VS Code webview). Preloading them made extensions.min.js load twice,
+			throwing "OrgChart... already defined". See diagramly/App.js.
+		-->
+		<script src="js/PostConfig.js"></script>
+	</head>
+
+	<body class="geEditor">
+		<div id="geInfo">
+			<div class="geBlock" style="text-align: center; min-width: 50%">
+				<h1>Flowchart Maker and Online Diagram Software</h1>
+				<p>
+					diagrams.net (formerly draw.io) is free online diagram
+					software. You can use it as a flowchart maker, network
+					diagram software, to create UML online, as an ER diagram
+					tool, to design database schema, to build BPMN online, as a
+					circuit diagram maker, and more. draw.io can import .vsdx,
+					Gliffy&trade; and Lucidchart&trade; files .
+				</p>
+				<h2 id="geStatus">Loading...</h2>
+			</div>
+		</div>
+		<script type="text/javascript">
+			(() => {
+				function patchFn(clazz, fnName, fnFactory) {
+					var old = clazz[fnName];
+					clazz[fnName] = fnFactory(old);
+				}
+
+				log("Document loaded, patching prototypes");
+
+				EditorUi.prototype.addEmbedButtons = () => {};
+
+				patchFn(EditorUi.prototype, "init", function (old) {
+					return function (...args) {
+						editorUi = this;
+						const result = old.apply(this, args);
+						return result;
+					};
+				});
+
+				// This prevents Draw.io from overriding VS Code commands
+				patchFn(mxEvent, "addListener", function (old) {
+					return function (...args) {
+						const [target, eventName, oldHandler] = args;
+						if (eventName === "keydown") {
+							args[2] = (/** @type {KeyboardEvent} */ keyEvt) => {
+								// Draw.io should not override these shortcuts
+								if (keyEvt.key === "Tab" && keyEvt.ctrlKey) {
+									return;
+								}
+								if (
+									keyEvt.key === "P" &&
+									(keyEvt.ctrlKey || keyEvt.metaKey)
+								) {
+									// this covers ctrl+shift+p.
+									return;
+								}
+								if (
+									keyEvt.key === "p" &&
+									(keyEvt.ctrlKey || keyEvt.metaKey)
+								) {
+									// this covers ctrl+p.
+									return;
+								}
+								if (
+									keyEvt.key === "S" &&
+									keyEvt.shiftKey &&
+									keyEvt.altKey
+								) {
+									// See https://github.com/hediet/vscode-drawio/issues/144
+									// This shortcut destroys the diagram.
+									return;
+								}
+								if (
+									keyEvt.key === "S" &&
+									keyEvt.ctrlKey &&
+									keyEvt.shiftKey
+								) {
+									// We are handling saving ourselves.
+									return;
+								}
+
+								oldHandler(keyEvt);
+							};
+						}
+
+						return old.apply(this, args);
+					};
+				});
+
+				/**
+				 * Fix URL resolution for VS Code webview URIs.
+				 * The isRelativeUrl fix is now built into draw.io, but we
+				 * still need to set the base URL for the webview context.
+				 */
+				mxUrlConverter.prototype.baseUrl = "$$literal-vsuri$$/";
+				mxUrlConverter.prototype.updateBaseUrl = function () {
+					this.baseDomain = "$$literal-vsuri$$";
+					this.baseUrl = "$$literal-vsuri$$/";
+				};
+
+				// Set the embed message source so draw.io natively
+				// accepts messages from VS Code without re-dispatching.
+				// window.opener was set to the vscodeBridge in the head script.
+				EditorUi.prototype.embedMessageSource = window.opener;
+
+				App.main();
+
+				/**
+				 * @param url {string}
+				 */
+				function loadScript(url) {
+					console.log("load custom plugin:", url);
+					const pluginScript = document.createElement("script");
+					pluginScript.type = "text/javascript";
+					pluginScript.src = url;
+					document
+						.getElementsByTagName("head")[0]
+						.appendChild(pluginScript);
+				}
+				/**
+				 * @param url {string[]}
+				 */
+				function loadScripts(urls) {
+					urls.forEach(loadScript);
+				}
+				loadScripts($$customPluginPaths$$);
+
+				/**
+				 * @param src {string}
+				 */
+				function loadScriptSrc(src) {
+					const pluginScript = document.createElement("script");
+					pluginScript.type = "text/javascript";
+					pluginScript.text = src;
+
+					document
+						.getElementsByTagName("head")[0]
+						.appendChild(pluginScript);
+				}
+
+				$$additionalCode$$.forEach(loadScriptSrc);
+			})();
+		</script>
+	</body>
+</html>

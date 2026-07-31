@@ -1,0 +1,16 @@
+import { commands, window, Disposable } from "vscode";
+
+export function registerFailableCommand(
+	commandName: string,
+	commandFn: (...args: any[]) => any
+): Disposable {
+	return commands.registerCommand(commandName, async (...args: any[]) => {
+		try {
+			console.log('(00)===>registerFailableCommand:','sjafkasjlfjaslfjsalfjkld')
+			return await commandFn(...args);
+		} catch (e : any) {
+			window.showErrorMessage("The command failed: " + e.message);
+			return false;
+		}
+	});
+}

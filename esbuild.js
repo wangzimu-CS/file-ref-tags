@@ -36,6 +36,10 @@ async function main() {
 		platform: 'node',
 		outfile: 'dist/extension.js',
 		external: ['vscode'],
+		loader: {
+			".html": "text",
+			".json": "json"
+		},
 		logLevel: 'silent',
 		plugins: [
 			/* add to the end of plugins array */

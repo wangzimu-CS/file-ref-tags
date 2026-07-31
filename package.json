@@ -1,209 +1,794 @@
 {
-  "name": "file-ref-tags",
-  "displayName": "File Ref Tags",
-  "description": "VSCode extension for managing and quickly accessing code references, allowing users to add files, code snippets, and comments to a reference panel for quick navigation.",
-  "version": "0.0.5",
-  "icon": "icon.png",
-  "publisher": "LiRenTech",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/LiRenTech/file-ref-tags.git"
-  },
-  "engines": {
-    "vscode": "^1.85.0"
-  },
-  "categories": [
-    "Snippets",
-    "Other"
-  ],
-  "activationEvents": ["onUri"],
-  "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "file-ref-tags.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "file-ref-tags.addCurrentFile",
-        "title": "添加当前文件到面板",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.addFileAndSnippet",
-        "title": "添加当前文件+选中的片段到面板",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.addGlobalUniqueSnippet",
-        "title": "添加当前选中的全局唯一片段到面板",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.addComment",
-        "title": "添加用户注释到面板",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.addGroup",
-        "title": "添加分组",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.copyLinkSnippetOnly",
-        "title": "复制链接（仅代码片段）",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.copyLinkFileNameOnly",
-        "title": "复制链接（仅文件名）",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.copyLinkFileNameAndSnippet",
-        "title": "复制链接（文件名+代码片段）",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.copyLinkParentDirAndSnippet",
-        "title": "复制链接（父级文件夹+文件名+代码片段）",
-        "category": "FileRefTags"
-      },
-      {
-        "command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
-        "title": "复制链接（项目级路径+代码片段）",
-        "category": "FileRefTags"
-      }
-    ],
-    "menus": {
-      "editor/context": [
-        {
-          "submenu": "file-ref-tags.submenu",
-          "title": "FileRefTags",
-          "group": "9_cutcopypaste"
-        }
-      ],
-      "view/title": [
-        {
-          "command": "file-ref-tags.addGroup",
-          "when": "view == file-ref-tags.list-view",
-          "group": "navigation"
-        }
-      ],
-      "file-ref-tags.submenu": [
-        {
-          "command": "file-ref-tags.addCurrentFile",
-          "group": "file-ref-tags@1"
-        },
-        {
-          "command": "file-ref-tags.addFileAndSnippet",
-          "group": "file-ref-tags@2"
-        },
-        {
-          "command": "file-ref-tags.addGlobalUniqueSnippet",
-          "group": "file-ref-tags@3"
-        },
-        {
-          "command": "file-ref-tags.addComment",
-          "group": "file-ref-tags@4"
-        },
-        {
-          "command": "file-ref-tags.addGroup",
-          "group": "file-ref-tags@5"
-        },
-        {
-          "command": "file-ref-tags.copyLinkSnippetOnly",
-          "group": "file-ref-tags@6"
-        },
-        {
-          "command": "file-ref-tags.copyLinkFileNameOnly",
-          "group": "file-ref-tags@7"
-        },
-        {
-          "command": "file-ref-tags.copyLinkFileNameAndSnippet",
-          "group": "file-ref-tags@8"
-        },
-        {
-          "command": "file-ref-tags.copyLinkParentDirAndSnippet",
-          "group": "file-ref-tags@9"
-        },
-        {
-          "command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
-          "group": "file-ref-tags@10"
-        }
-      ]
-    },
-    "submenus": [
-      {
-        "id": "file-ref-tags.submenu",
-        "label": "FileRefTags",
-        "icon": {
-          "light": "resources/icon.svg",
-          "dark": "resources/icon.svg"
-        }
-      }
-    ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "file-ref-tags-view-container",
-          "title": "File Ref Tags",
-          "icon": "resources/icon.svg"
-        }
-      ]
-    },
-    "views": {
-      "file-ref-tags-view-container": [
-        {
-          "type": "webview",
-          "id": "file-ref-tags.list-view",
-          "name": "References List",
-          "icon": "resources/icon.svg",
-          "contextualTitle": "File Ref Tags"
-        }
-      ]
-    },
-    "keybindings": [
-      {
-        "command": "file-ref-tags.copyLinkFileNameAndSnippet",
-        "key": "cmd+shift+alt+c",
-        "when": "editorTextFocus && !editorReadonly && isMac"
-      },
-      {
-        "command": "file-ref-tags.copyLinkFileNameAndSnippet",
-        "key": "ctrl+shift+alt+c",
-        "when": "editorTextFocus && !editorReadonly && !isMac"
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "pnpm run package",
-    "compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
-    "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
-    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-    "package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
-    "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vscode-test",
-    "dev:0": "pnpm run -F vue-view-demo dev",
-    "dev:1": "pnpm run -F vue-view-demo dev",
-    "build:0": "pnpm run -F vue-view-demo build",
-    "build:1": "pnpm run -F vue-view-demo build"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.85.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "typescript-eslint": "^8.48.1",
-    "eslint": "^9.39.1",
-    "esbuild": "^0.27.1",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
-  }
+	"name": "file-ref-tags",
+	"displayName": "File Ref Tags",
+	"description": "VSCode extension for managing and quickly accessing code references, allowing users to add files, code snippets, and comments to a reference panel for quick navigation.",
+	"version": "0.0.5",
+	"icon": "icon.png",
+	"publisher": "LiRenTech",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/LiRenTech/file-ref-tags.git"
+	},
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": [
+		"Snippets",
+		"Other"
+	],
+	"activationEvents": [
+		"onUri"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "file-ref-tags.helloWorld",
+				"title": "Hello World"
+			},
+			{
+				"command": "file-ref-tags.addCurrentFile",
+				"title": "添加当前文件到面板",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.addFileAndSnippet",
+				"title": "添加当前文件+选中的片段到面板",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.addGlobalUniqueSnippet",
+				"title": "添加当前选中的全局唯一片段到面板",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.addComment",
+				"title": "添加用户注释到面板",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.addGroup",
+				"title": "添加分组",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.copyLinkSnippetOnly",
+				"title": "复制链接（仅代码片段）",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.copyLinkFileNameOnly",
+				"title": "复制链接（仅文件名）",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.copyLinkFileNameAndSnippet",
+				"title": "复制链接（文件名+代码片段）",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.copyLinkParentDirAndSnippet",
+				"title": "复制链接（父级文件夹+文件名+代码片段）",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
+				"title": "复制链接（项目级路径+代码片段）",
+				"category": "FileRefTags"
+			},
+			{
+				"command": "hediet.vscode-drawio.convert",
+				"title": "Convert To...",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.export",
+				"title": "Export To...",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.toggleCodeLinkActivation",
+				"title": "Toggle Code Link Activation",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.changeTheme",
+				"title": "Change Theme",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.editDiagramAsText",
+				"title": "Edit Diagram As Text (Experimental)",
+				"enablement": "hediet.vscode-drawio.experimentalFeaturesEnabled",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.linkCodeWithSelectedNode",
+				"title": "Link Code with Selected Node",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.newDiagram",
+				"title": "New Draw.io Diagram",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.linkFileWithSelectedNode",
+				"title": "Link File With Selected Node",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.linkSymbolWithSelectedNode",
+				"title": "Link Symbol With Selected Node",
+				"category": "Draw.io"
+			},
+			{
+				"command": "hediet.vscode-drawio.linkWsSymbolWithSelectedNode",
+				"title": "Link Workspace Symbol With Selected Node",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.editDiagram",
+				"title": "Edit Diagram",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.insertDiagram",
+				"title": "Insert New Diagram",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.toggleLock",
+				"title": "Toggle Diagram Lock",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.previewDiagram",
+				"title": "Preview Diagram",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.inlinePreview",
+				"title": "Open Inline Preview",
+				"category": "Draw.io"
+			},
+			{
+				"command": "drawio-inline-editor.convertMermaid",
+				"title": "Convert Mermaid to Draw.io",
+				"category": "Draw.io"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"submenu": "file-ref-tags.submenu",
+					"title": "FileRefTags",
+					"group": "9_cutcopypaste"
+				}
+			],
+			"view/title": [
+				{
+					"command": "file-ref-tags.addGroup",
+					"when": "view == file-ref-tags.list-view",
+					"group": "navigation"
+				}
+			],
+			"file-ref-tags.submenu": [
+				{
+					"command": "file-ref-tags.addCurrentFile",
+					"group": "file-ref-tags@1"
+				},
+				{
+					"command": "file-ref-tags.addFileAndSnippet",
+					"group": "file-ref-tags@2"
+				},
+				{
+					"command": "file-ref-tags.addGlobalUniqueSnippet",
+					"group": "file-ref-tags@3"
+				},
+				{
+					"command": "file-ref-tags.addComment",
+					"group": "file-ref-tags@4"
+				},
+				{
+					"command": "file-ref-tags.addGroup",
+					"group": "file-ref-tags@5"
+				},
+				{
+					"command": "file-ref-tags.copyLinkSnippetOnly",
+					"group": "file-ref-tags@6"
+				},
+				{
+					"command": "file-ref-tags.copyLinkFileNameOnly",
+					"group": "file-ref-tags@7"
+				},
+				{
+					"command": "file-ref-tags.copyLinkFileNameAndSnippet",
+					"group": "file-ref-tags@8"
+				},
+				{
+					"command": "file-ref-tags.copyLinkParentDirAndSnippet",
+					"group": "file-ref-tags@9"
+				},
+				{
+					"command": "file-ref-tags.copyLinkWorkspacePathAndSnippet",
+					"group": "file-ref-tags@10"
+				}
+			],
+			"explorer/context": [
+				{
+					"when": "hediet.vscode-drawio.active",
+					"command": "hediet.vscode-drawio.linkFileWithSelectedNode",
+					"group": "Draw.io"
+				}
+			],
+			"commandPalette": [
+				{
+					"when": "false",
+					"command": "hediet.vscode-drawio.linkFileWithSelectedNode"
+				}
+			]
+		},
+		"submenus": [
+			{
+				"id": "file-ref-tags.submenu",
+				"label": "FileRefTags",
+				"icon": {
+					"light": "resources/icon.svg",
+					"dark": "resources/icon.svg"
+				}
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "file-ref-tags-view-container",
+					"title": "File Ref Tags",
+					"icon": "resources/icon.svg"
+				}
+			]
+		},
+		"views": {
+			"file-ref-tags-view-container": [
+				{
+					"type": "webview",
+					"id": "file-ref-tags.list-view",
+					"name": "References List",
+					"icon": "resources/icon.svg",
+					"contextualTitle": "File Ref Tags"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "file-ref-tags.copyLinkFileNameAndSnippet",
+				"key": "cmd+shift+alt+c",
+				"when": "editorTextFocus && !editorReadonly && isMac"
+			},
+			{
+				"command": "file-ref-tags.copyLinkFileNameAndSnippet",
+				"key": "ctrl+shift+alt+c",
+				"when": "editorTextFocus && !editorReadonly && !isMac"
+			},
+			{
+				"command": "hediet.vscode-drawio.linkCodeWithSelectedNode",
+				"key": "shift+F3",
+				"when": "!findWidgetVisible"
+			}
+		],
+		"languages": [
+			{
+				"id": "drawio",
+				"extensions": [
+					".drawio",
+					".dio",
+					".dio.svg",
+					".drawio.svg",
+					".drawio.png",
+					".dio.png"
+				],
+				"aliases": [
+					"Draw.io",
+					"drawio"
+				]
+			}
+		],
+		"customEditors": [
+			{
+				"viewType": "hediet.vscode-drawio",
+				"displayName": "Draw.io (Binary)",
+				"selector": [
+					{
+						"filenamePattern": "*.drawio.png"
+					},
+					{
+						"filenamePattern": "*.dio.png"
+					}
+				],
+				"priority": "default"
+			},
+			{
+				"viewType": "hediet.vscode-drawio-text",
+				"displayName": "Draw.io",
+				"selector": [
+					{
+						"filenamePattern": "*.drawio"
+					},
+					{
+						"filenamePattern": "*.dio"
+					},
+					{
+						"filenamePattern": "*.dio.svg"
+					},
+					{
+						"filenamePattern": "*.drawio.svg"
+					}
+				],
+				"priority": "default"
+			},
+			{
+				"viewType": "drawio-inline-editor.drawioEditor",
+				"displayName": "Draw.io Inline Editor",
+				"selector": [
+					{
+						"filenamePattern": "*.drawio"
+					},
+					{
+						"filenamePattern": "*.dio"
+					}
+				],
+				"priority": "option"
+			},
+			{
+				"viewType": "drawio-inline-editor.markdownEditor",
+				"displayName": "Markdown with Diagrams (Experimental)",
+				"selector": [
+					{
+						"filenamePattern": "*.md"
+					}
+				],
+				"priority": "option"
+			}
+		],
+		"configuration": [
+			{
+				"title": "General",
+				"order": 10,
+				"properties": {
+					"hediet.vscode-drawio.offline": {
+						"type": "boolean",
+						"default": true,
+						"title": "Use Offline Mode",
+						"description": "When enabled, the bundled instance of Draw.io is used.",
+						"order": 10
+					},
+					"hediet.vscode-drawio.online-url": {
+						"type": "string",
+						"default": "https://embed.diagrams.net/",
+						"title": "Online URL",
+						"description": "The app to use when offline mode is disabled.",
+						"order": 11
+					},
+					"hediet.vscode-drawio.codeLinkActivated": {
+						"type": "boolean",
+						"default": false,
+						"title": "Code Link Enabled",
+						"description": "When activated, selecting a node will navigate to an associated code section.",
+						"order": 20
+					},
+					"hediet.vscode-drawio.local-storage": {
+						"anyOf": [
+							{
+								"type": "object"
+							},
+							{
+								"type": "string"
+							}
+						],
+						"default": {},
+						"readOnly": true,
+						"title": "Draw.io Local Storage",
+						"description": "Only change this property if you know what you are doing. Manual changes to this property are not supported!",
+						"order": 30
+					},
+					"hediet.vscode-drawio.simpleLabels": {
+						"type": "boolean",
+						"default": false,
+						"title": "Use SimpleLabels",
+						"description": "When enabled, no ForeignObjects are used in the svg.",
+						"order": 40
+					},
+					"hediet.vscode-drawio.zoomFactor": {
+						"type": "number",
+						"default": 1.2,
+						"title": "Draw.io zoom factor",
+						"description": "Defines the zoom factor for mouse wheel and trackpad zoom.",
+						"order": 50
+					},
+					"hediet.vscode-drawio.globalVars": {
+						"type": "object",
+						"title": "Draw.io global variables.",
+						"description": "Defines global variables for system-wide placeholders using a JSON structure with key, value pairs. Keep the number of global variables small.",
+						"order": 60
+					},
+					"hediet.vscode-drawio.resizeImages": {
+						"type": [
+							"boolean",
+							"null"
+						],
+						"title": "Draw.io resize images.",
+						"description": "If set to true, images are resized automatically on paste. If not defined, the user will be asked to confirm the resize.",
+						"default": null,
+						"order": 70
+					},
+					"hediet.vscode-drawio.showTooltipIcons": {
+						"type": "boolean",
+						"default": false,
+						"title": "Show Tooltip Icons",
+						"description": "Specifies whether tooltip icons are shown.",
+						"order": 80
+					},
+					"hediet.vscode-drawio.showLinkIcons": {
+						"type": "boolean",
+						"default": false,
+						"title": "Show Link Icons",
+						"description": "Specifies whether link icons are shown.",
+						"order": 90
+					},
+					"hediet.vscode-drawio.showConnectHandle": {
+						"type": "boolean",
+						"default": false,
+						"title": "Show Connect Handle",
+						"description": "Specifies whether the connect handle is shown on selected vertices.",
+						"order": 100
+					}
+				}
+			},
+			{
+				"title": "Inline Editor",
+				"order": 15,
+				"properties": {
+					"drawio-inline-editor.theme": {
+						"type": "string",
+						"default": "auto",
+						"enum": [
+							"auto",
+							"kennedy",
+							"min",
+							"atlas",
+							"dark",
+							"sketch"
+						],
+						"description": "Editor UI theme"
+					},
+					"drawio-inline-editor.autoLock": {
+						"type": "boolean",
+						"default": false,
+						"description": "Automatically lock diagrams after editing"
+					},
+					"drawio-inline-editor.minimalUI": {
+						"type": "boolean",
+						"default": true,
+						"description": "Use minimal draw.io UI (hides sidebar, format panel, scrollbars)"
+					},
+					"drawio-inline-editor.diagramPadding": {
+						"type": "number",
+						"default": 28,
+						"minimum": 0,
+						"maximum": 100,
+						"description": "Padding (in pixels) around diagram content in the viewer and inline editor. Must be large enough to show selection handles (typically 20px)."
+					}
+				}
+			},
+			{
+				"title": "Plugins",
+				"order": 20,
+				"properties": {
+					"hediet.vscode-drawio.plugins": {
+						"type": "array",
+						"items": {
+							"anyOf": [
+								{
+									"type": "object",
+									"properties": {
+										"file": {
+											"type": "string",
+											"description": "The file path to the library. Must be absolute. You can use `${workspaceFolder}`."
+										}
+									}
+								}
+							]
+						},
+						"default": [],
+						"title": "Plugins",
+						"markdownDescription": "Loads Draw.io plugins from the local filesystem.  See description of the `file` property. See [plugins documentation](https://github.com/hediet/vscode-drawio/blob/master/docs/plugins.md).",
+						"order": 10
+					},
+					"hediet.vscode-drawio.knownPlugins": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"pluginId": {
+									"type": "string"
+								},
+								"fingerprint": {
+									"type": "string"
+								},
+								"allowed": {
+									"type": "boolean"
+								}
+							}
+						},
+						"default": [],
+						"title": "Known Plugins",
+						"markdownDescription": "List of allowed or denied plugins. The extension will read and write to this list based on what the used decides when loading specific plugins. See [plugins documentation](https://github.com/hediet/vscode-drawio/blob/master/docs/plugins.md).",
+						"scope": "application",
+						"order": 15
+					},
+					"hediet.vscode-drawio.customLibraries": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"entryId": {
+									"type": "string",
+									"description": "The id of the entry. A specfic entry can be enabled or deactivated in the editor."
+								},
+								"libName": {
+									"type": "string",
+									"description": "The name of the library in the shape overview."
+								}
+							},
+							"anyOf": [
+								{
+									"type": "object",
+									"properties": {
+										"url": {
+											"type": "string"
+										}
+									}
+								},
+								{
+									"type": "object",
+									"properties": {
+										"xml": {
+											"type": "string"
+										}
+									}
+								},
+								{
+									"type": "object",
+									"properties": {
+										"json": {}
+									}
+								},
+								{
+									"type": "object",
+									"properties": {
+										"file": {
+											"type": "string",
+											"description": "The file path to the library. Must be absolute. You can use ${workspaceFolder}."
+										}
+									}
+								}
+							]
+						},
+						"default": [],
+						"title": "Custom Libraries",
+						"description": "Configures the Draw.io editor to use custom libraries.",
+						"order": 50
+					}
+				}
+			},
+			{
+				"title": "Theme and styles",
+				"order": 30,
+				"properties": {
+					"hediet.vscode-drawio.styles": {
+						"title": "Styles",
+						"description": "Defines an array of objects that contain the colours (fontColor, fillColor, strokeColor and gradientColor) for the Style tab of the format panel if the selection is empty. These objects can have a commonStyle (which is applied to both vertices and edges), vertexStyle (applied to vertices) and edgeStyle (applied to edges), and a graph with background and gridColor. An empty object means apply the default colors",
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"commonStyle": {
+									"type": "object",
+									"properties": {
+										"fontColor": {
+											"type": "string"
+										},
+										"strokeColor": {
+											"type": "string"
+										},
+										"fillColor": {
+											"type": "string"
+										}
+									}
+								},
+								"graph": {
+									"type": "object",
+									"properties": {
+										"background": {
+											"type": "string"
+										},
+										"gridColor": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					},
+					"hediet.vscode-drawio.defaultVertexStyle": {
+						"title": "Default Vertex Style",
+						"description": "Default styling of vertices (shapes).",
+						"type": "object"
+					},
+					"hediet.vscode-drawio.defaultEdgeStyle": {
+						"title": "Default Edge Style",
+						"description": "Default styling of edges.",
+						"type": "object"
+					},
+					"hediet.vscode-drawio.colorNames": {
+						"title": "Color Names",
+						"description": "Names for colors, eg. {‘FFFFFF’: ‘White’, ‘000000’: ‘Black’} that are used as tooltips (uppercase, no leading # for the colour codes)",
+						"type": "object"
+					},
+					"hediet.vscode-drawio.presetColors": {
+						"title": "Preset Colors",
+						"description": "Color codes for the upper palette in the color dialog.",
+						"type": "array",
+						"items": {
+							"type": "string",
+							"description": "Use hex codes without # at the beginning only (FFFFFF for absolute white, for example)."
+						}
+					},
+					"hediet.vscode-drawio.customColorSchemes": {
+						"title": "Custom Color Schemes",
+						"markdownDescription": "Available color schemes in the style section at the top of the format panel. See example [here](https://www.diagrams.net/doc/faq/custom-colours-confluence-cloud#default-colour-schemes---format-panel)",
+						"type": "array",
+						"items": {
+							"type": "array",
+							"description": "Represents a page of color schemes.",
+							"items": {
+								"type": "object",
+								"properties": {
+									"title": {
+										"type": "string",
+										"description": "Title of the color used in tooltips."
+									},
+									"fill": {
+										"type": "string",
+										"description": "Use hex codes with # at the beginning (#FFFFFF for absolute white, for example)."
+									},
+									"stroke": {
+										"type": "string",
+										"description": "Use hex codes with # at the beginning (#FFFFFF for absolute white, for example)."
+									},
+									"gradient": {
+										"type": "string",
+										"description": "Use hex codes with # at the beginning (#FFFFFF for absolute white, for example)."
+									},
+									"font": {
+										"type": "string",
+										"description": "Use hex codes with # at the beginning (#FFFFFF for absolute white, for example)."
+									}
+								}
+							}
+						}
+					},
+					"hediet.vscode-drawio.customFonts": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"title": "Custom Fonts",
+						"description": "Configures the Draw.io editor to use custom fonts."
+					},
+					"hediet.vscode-drawio.theme": {
+						"title": "Draw.io Theme",
+						"type": "string",
+						"default": "kennedy",
+						"enum": [
+							"auto",
+							"kennedy",
+							"min",
+							"simple",
+							"sketch"
+						],
+						"description": "The theme to use for the Draw.io editor. Use \"automatic\" to automatically choose a Draw.io theme that matches your current VS Code theme."
+					},
+					"hediet.vscode-drawio.appearance": {
+						"title": "Draw.io Appearance",
+						"type": "string",
+						"default": "light",
+						"enum": [
+							"automatic",
+							"light",
+							"dark",
+							"high-contrast-light",
+							"high-contrast"
+						],
+						"description": "The appearance to use for the Draw.io editor. Use \"automatic\" to automatically choose a Draw.io theme that matches your current VS Code theme."
+					}
+				}
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "pnpm run package",
+		"compile": "pnpm run check-types && pnpm run lint && node esbuild.js",
+		"watch": "npm-run-all -p watch:*",
+		"watch:esbuild": "node esbuild.js --watch",
+		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+		"package": "pnpm run check-types && pnpm run lint && node esbuild.js --production",
+		"build-plugins": "webpack --mode production --config ./drawio-custom-plugins/webpack.config.ts",
+    "package-extension-stable": "vsce package --out ./dist/extension.vsix",
+		"package-extension-preRelease": "vsce package --out ./dist/extension.vsix --pre-release",
+		"compile-tests": "tsc -p . --outDir out",
+		"watch-tests": "tsc -p . -w --outDir out",
+		"pretest": "pnpm run compile-tests && pnpm run compile && pnpm run lint",
+		"check-types": "tsc --noEmit",
+		"lint": "eslint src",
+		"test": "vscode-test",
+		"dev:0": "pnpm run -F vue-view-demo dev",
+		"dev:1": "pnpm run -F vue-view-demo dev",
+		"build:0": "pnpm run -F vue-view-demo build",
+		"build:1": "pnpm run -F vue-view-demo build"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "~22.19.3",
+		"@types/vscode": "^1.85.0",
+		"@vscode/test-cli": "^0.0.12",
+		"@vscode/test-electron": "^2.5.2",
+		"clean-webpack-plugin": "^4.0.0",
+		"css-loader": "^7.1.4",
+		"esbuild": "^0.27.1",
+		"eslint": "^9.39.1",
+		"mithril": "^2.3.8",
+		"npm-run-all": "^4.1.5",
+		"style-loader": "^4.0.0",
+		"ts-loader": "^9.6.2",
+		"tsx": "^4.23.1",
+		"typescript": "^5.9.3",
+		"typescript-eslint": "^8.48.1",
+		"webpack": "^5.109.2",
+		"webpack-cli": "^7.2.2"
+	},
+	"dependencies": {
+		"@hediet/json-to-dictionary": "^0.2.1",
+		"@hediet/std": "^0.6.0",
+		"@knuddels/mobx-logger": "^1.1.1",
+		"@types/mithril": "^2.2.8",
+		"js-sha256": "^1.0.0",
+		"mobx": "5.15.4",
+		"vsls": "^1.0.4753",
+		"xml-formatter": "^3.7.0",
+		"xml-parser-xo": "^4.1.6"
+	},
+	"files": [
+		"dist/custom-drawio-plugins/**/*",
+		"dist/extension/**/*",
+		"src/inline-editor/**/*",
+		"media/**/*",
+		"package.json",
+		"docs/**/*",
+		"drawio/LICENSE",
+		"drawio/VERSION",
+		"drawio/src/main/webapp/js/**/*",
+		"drawio/src/main/webapp/connect/**/*",
+		"drawio/src/main/webapp/images/**/*",
+		"drawio/src/main/webapp/img/**/*",
+		"drawio/src/main/webapp/math4/**/*",
+		"drawio/src/main/webapp/mxgraph/**/*",
+		"drawio/src/main/webapp/plugins/**/*",
+		"drawio/src/main/webapp/resources/**/*",
+		"drawio/src/main/webapp/styles/**/*",
+		"drawio/src/main/webapp/templates/**/*",
+		"drawio/src/main/webapp/index.html",
+		"LICENSE.md"
+	]
 }

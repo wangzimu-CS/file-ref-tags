@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "ES2017",
+		"outDir": "out",
+		"lib": ["ES2017", "DOM"],
+		"sourceMap": true,
+		"rootDir": "./src",
+		"strict": true,
+		"experimentalDecorators": true
+	},
+	"include": ["./src/**/*"]
+}

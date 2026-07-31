@@ -1,0 +1,32 @@
+<mxfile host="65bd71144e">
+    <diagram id="LI5WWETnjIYInhi6fE_q" name="第 1 页">
+        <mxGraphModel dx="1188" dy="1320" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="lhJuSB19Nk66LyVZNg31-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#ff0000;strokeWidth=2;fontFamily=Courier New;fontSize=18;fontColor=#ff0000;" value="#test" vertex="1">
+                    <mxGeometry height="60" width="120" x="280" y="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="3ZO6IK8aB5L1258Z6Y0Z-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Courier New;fontSize=18;fontColor=#ff0000;" value="#test111" vertex="1">
+                    <mxGeometry height="60" width="140" x="70" y="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="zXSFtwXMnrNAkCnKHddJ-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#ff0000;strokeWidth=2;fontFamily=Courier New;fontSize=18;fontColor=#ff0000;" value="" vertex="1">
+                    <mxGeometry height="60" width="120" x="240" y="560" as="geometry"/>
+                </mxCell>
+                <mxCell id="zXSFtwXMnrNAkCnKHddJ-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;shapeInside=1;aspect=fixed;strokeColor=#ff0000;strokeWidth=2;fontFamily=Courier New;fontSize=18;fontColor=#ff0000;" value="" vertex="1">
+                    <mxGeometry height="80" width="80" x="260" y="550" as="geometry"/>
+                </mxCell>
+                <mxCell id="zXSFtwXMnrNAkCnKHddJ-3" edge="1" parent="1" style="curved=1;endArrow=classic;html=1;strokeColor=#0000ff;strokeWidth=2;fontFamily=Courier New;fontSize=18;fontColor=#0000ff;elbow=vertical;" value="">
+                    <mxGeometry height="50" relative="1" width="50" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="330" y="610"/>
+                            <mxPoint x="280" y="560"/>
+                        </Array>
+                        <mxPoint x="100" y="770" as="sourcePoint"/>
+                        <mxPoint x="330" y="560" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
