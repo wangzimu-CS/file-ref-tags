@@ -26,6 +26,8 @@ import { toggleLockAtLine } from "./diagramLock";
 import { createLocalServer, LocalServer } from "./localServer";
 import markdownItDrawio from "./markdownPlugin";
 
+import { registerUriRoute } from '../../uriDispatcher';
+
 /**
  * Default diagram padding (pixels) used as fallback for the
  * 'drawio-inline-editor.diagramPadding' setting.
@@ -388,146 +390,286 @@ export function activate(context: vscode.ExtensionContext): { extendMarkdownIt: 
 	// activeTextEditor and visibleTextEditors may not contain the markdown
 	// file.  We search workspace.textDocuments instead (all open documents
 	// regardless of visibility).
-	context.subscriptions.push(
-		vscode.window.registerUriHandler({
-			async handleUri(uri: vscode.Uri) {
-				if (uri.path !== "/edit") { return; }
 
-				const params = new URLSearchParams(uri.query);
-				const line = parseInt(params.get("line") || "", 10);
-				if (isNaN(line)) { return; }
+	// context.subscriptions.push(
+	// 	vscode.window.registerUriHandler({
+	// 		async handleUri(uri: vscode.Uri) {
+	// 			if (uri.path !== "/edit") { return; }
 
-				const docParam = params.get("doc");
-				const blockIndex = parseInt(params.get("blockIndex") || "", 10);
-				const hasBlockIndex = !isNaN(blockIndex) && blockIndex >= 0;
-				const diagramIdParam = params.get("diagramId");
+	// 			const params = new URLSearchParams(uri.query);
+	// 			const line = parseInt(params.get("line") || "", 10);
+	// 			if (isNaN(line)) { return; }
 
-				// Helper: find block in a known document (Strategy 1 — file already identified).
-				// Diagram ID is the most reliable key; block index and line are fallbacks.
-				function findBlockInDoc(doc: vscode.TextDocument): DiagramBlock | null {
-					const blocks = findDiagramBlocks(doc.getText());
+	// 			const docParam = params.get("doc");
+	// 			const blockIndex = parseInt(params.get("blockIndex") || "", 10);
+	// 			const hasBlockIndex = !isNaN(blockIndex) && blockIndex >= 0;
+	// 			const diagramIdParam = params.get("diagramId");
 
-					// Prefer diagram ID match (unique and stable across edits)
-					if (diagramIdParam) {
-						const byId = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
-						if (byId) { return byId; }
-					}
+	// 			// Helper: find block in a known document (Strategy 1 — file already identified).
+	// 			// Diagram ID is the most reliable key; block index and line are fallbacks.
+	// 			function findBlockInDoc(doc: vscode.TextDocument): DiagramBlock | null {
+	// 				const blocks = findDiagramBlocks(doc.getText());
 
-					if (hasBlockIndex && blockIndex < blocks.length) {
-						return blocks[blockIndex];
-					}
+	// 				// Prefer diagram ID match (unique and stable across edits)
+	// 				if (diagramIdParam) {
+	// 					const byId = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
+	// 					if (byId) { return byId; }
+	// 				}
 
-					const exact = blocks.find(b => line >= b.startLine && line <= b.endLine);
-					if (exact) { return exact; }
+	// 				if (hasBlockIndex && blockIndex < blocks.length) {
+	// 					return blocks[blockIndex];
+	// 				}
 
-					let best: DiagramBlock | null = null;
-					let bestDist = Infinity;
-					for (const b of blocks) {
-						const dist = line < b.startLine ? b.startLine - line
-							: line > b.endLine ? line - b.endLine : 0;
-						if (dist < bestDist) {
-							bestDist = dist;
-							best = b;
-						}
-					}
-					return (best && bestDist <= 5) ? best : null;
+	// 				const exact = blocks.find(b => line >= b.startLine && line <= b.endLine);
+	// 				if (exact) { return exact; }
+
+	// 				let best: DiagramBlock | null = null;
+	// 				let bestDist = Infinity;
+	// 				for (const b of blocks) {
+	// 					const dist = line < b.startLine ? b.startLine - line
+	// 						: line > b.endLine ? line - b.endLine : 0;
+	// 					if (dist < bestDist) {
+	// 						bestDist = dist;
+	// 						best = b;
+	// 					}
+	// 				}
+	// 				return (best && bestDist <= 5) ? best : null;
+	// 			}
+
+	// 			function openBlock(doc: vscode.TextDocument, block: DiagramBlock): void {
+	// 				if (block.locked) {
+	// 					vscode.window.showWarningMessage("This diagram is locked. Unlock it first to edit.");
+	// 					return;
+	// 				}
+	// 				openDiagramEditor(context, doc, block);
+	// 			}
+
+	// 			// Strategy 1: open the exact file via the doc URI embedded by the
+	// 			// markdown-it plugin.  This is the most reliable path.
+	// 			if (docParam) {
+	// 				try {
+	// 					const docUri = vscode.Uri.parse(decodeURIComponent(docParam));
+	// 					const doc = await vscode.workspace.openTextDocument(docUri);
+	// 					const block = findBlockInDoc(doc);
+	// 					if (block) {
+	// 						openBlock(doc, block);
+	// 						return;
+	// 					}
+	// 				} catch (err: any) {
+	// 					console.warn("drawio-inline-editor: failed to open doc from URI param:", err.message);
+	// 				}
+	// 			}
+
+	// 			// Strategy 2: diagram ID search across all open markdown documents.
+	// 			// Diagram IDs are unique, so this reliably finds the correct file
+	// 			// even when the doc URI parameter is missing.
+	// 			const docs = vscode.workspace.textDocuments.filter(
+	// 				d => d.languageId === "markdown"
+	// 			);
+
+	// 			if (diagramIdParam) {
+	// 				for (const doc of docs) {
+	// 					const blocks = findDiagramBlocks(doc.getText());
+	// 					const block = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
+	// 					if (block) {
+	// 						openBlock(doc, block);
+	// 						return;
+	// 					}
+	// 				}
+	// 			}
+
+	// 			// Strategy 3: search all open markdown documents by line number.
+	// 			// We use multi-pass matching to avoid picking phantom blocks
+	// 			// (e.g. documentation examples nested inside backtick fences).
+
+	// 			// Pass 1: block index + line range must BOTH agree (highest confidence)
+	// 			if (hasBlockIndex) {
+	// 				for (const doc of docs) {
+	// 					const blocks = findDiagramBlocks(doc.getText());
+	// 					if (blockIndex < blocks.length) {
+	// 						const b = blocks[blockIndex];
+	// 						if (line >= b.startLine && line <= b.endLine) {
+	// 							openBlock(doc, b);
+	// 							return;
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+
+	// 			// Pass 2: exact line range only
+	// 			for (const doc of docs) {
+	// 				const blocks = findDiagramBlocks(doc.getText());
+	// 				const block = blocks.find(b => line >= b.startLine && line <= b.endLine);
+	// 				if (block) {
+	// 					openBlock(doc, block);
+	// 					return;
+	// 				}
+	// 			}
+
+	// 			// Pass 3: fuzzy line match (nearest within 5 lines)
+	// 			for (const doc of docs) {
+	// 				const blocks = findDiagramBlocks(doc.getText());
+	// 				let best: DiagramBlock | null = null;
+	// 				let bestDist = Infinity;
+	// 				for (const b of blocks) {
+	// 					const dist = line < b.startLine ? b.startLine - line
+	// 						: line > b.endLine ? line - b.endLine : 0;
+	// 					if (dist < bestDist) {
+	// 						bestDist = dist;
+	// 						best = b;
+	// 					}
+	// 				}
+	// 				if (best && bestDist <= 5) {
+	// 					openBlock(doc, best);
+	// 					return;
+	// 				}
+	// 			}
+
+	// 			vscode.window.showWarningMessage(
+	// 				"Could not find the diagram. Make sure the Markdown file is open."
+	// 			);
+	// 		},
+	// 	})
+	// );
+
+	async function handleUriDIIE(uri: vscode.Uri) {
+		if (uri.path !== "/edit") { return; }
+
+		const params = new URLSearchParams(uri.query);
+		const line = parseInt(params.get("line") || "", 10);
+		if (isNaN(line)) { return; }
+
+		const docParam = params.get("doc");
+		const blockIndex = parseInt(params.get("blockIndex") || "", 10);
+		const hasBlockIndex = !isNaN(blockIndex) && blockIndex >= 0;
+		const diagramIdParam = params.get("diagramId");
+
+		// Helper: find block in a known document (Strategy 1 — file already identified).
+		// Diagram ID is the most reliable key; block index and line are fallbacks.
+		function findBlockInDoc(doc: vscode.TextDocument): DiagramBlock | null {
+			const blocks = findDiagramBlocks(doc.getText());
+
+			// Prefer diagram ID match (unique and stable across edits)
+			if (diagramIdParam) {
+				const byId = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
+				if (byId) { return byId; }
+			}
+
+			if (hasBlockIndex && blockIndex < blocks.length) {
+				return blocks[blockIndex];
+			}
+
+			const exact = blocks.find(b => line >= b.startLine && line <= b.endLine);
+			if (exact) { return exact; }
+
+			let best: DiagramBlock | null = null;
+			let bestDist = Infinity;
+			for (const b of blocks) {
+				const dist = line < b.startLine ? b.startLine - line
+					: line > b.endLine ? line - b.endLine : 0;
+				if (dist < bestDist) {
+					bestDist = dist;
+					best = b;
 				}
+			}
+			return (best && bestDist <= 5) ? best : null;
+		}
 
-				function openBlock(doc: vscode.TextDocument, block: DiagramBlock): void {
-					if (block.locked) {
-						vscode.window.showWarningMessage("This diagram is locked. Unlock it first to edit.");
+		function openBlock(doc: vscode.TextDocument, block: DiagramBlock): void {
+			if (block.locked) {
+				vscode.window.showWarningMessage("This diagram is locked. Unlock it first to edit.");
+				return;
+			}
+			openDiagramEditor(context, doc, block);
+		}
+
+		// Strategy 1: open the exact file via the doc URI embedded by the
+		// markdown-it plugin.  This is the most reliable path.
+		if (docParam) {
+			try {
+				const docUri = vscode.Uri.parse(decodeURIComponent(docParam));
+				const doc = await vscode.workspace.openTextDocument(docUri);
+				const block = findBlockInDoc(doc);
+				if (block) {
+					openBlock(doc, block);
+					return;
+				}
+			} catch (err: any) {
+				console.warn("drawio-inline-editor: failed to open doc from URI param:", err.message);
+			}
+		}
+
+		// Strategy 2: diagram ID search across all open markdown documents.
+		// Diagram IDs are unique, so this reliably finds the correct file
+		// even when the doc URI parameter is missing.
+		const docs = vscode.workspace.textDocuments.filter(
+			d => d.languageId === "markdown"
+		);
+
+		if (diagramIdParam) {
+			for (const doc of docs) {
+				const blocks = findDiagramBlocks(doc.getText());
+				const block = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
+				if (block) {
+					openBlock(doc, block);
+					return;
+				}
+			}
+		}
+
+		// Strategy 3: search all open markdown documents by line number.
+		// We use multi-pass matching to avoid picking phantom blocks
+		// (e.g. documentation examples nested inside backtick fences).
+
+		// Pass 1: block index + line range must BOTH agree (highest confidence)
+		if (hasBlockIndex) {
+			for (const doc of docs) {
+				const blocks = findDiagramBlocks(doc.getText());
+				if (blockIndex < blocks.length) {
+					const b = blocks[blockIndex];
+					if (line >= b.startLine && line <= b.endLine) {
+						openBlock(doc, b);
 						return;
 					}
-					openDiagramEditor(context, doc, block);
 				}
+			}
+		}
 
-				// Strategy 1: open the exact file via the doc URI embedded by the
-				// markdown-it plugin.  This is the most reliable path.
-				if (docParam) {
-					try {
-						const docUri = vscode.Uri.parse(decodeURIComponent(docParam));
-						const doc = await vscode.workspace.openTextDocument(docUri);
-						const block = findBlockInDoc(doc);
-						if (block) {
-							openBlock(doc, block);
-							return;
-						}
-					} catch (err: any) {
-						console.warn("drawio-inline-editor: failed to open doc from URI param:", err.message);
-					}
+		// Pass 2: exact line range only
+		for (const doc of docs) {
+			const blocks = findDiagramBlocks(doc.getText());
+			const block = blocks.find(b => line >= b.startLine && line <= b.endLine);
+			if (block) {
+				openBlock(doc, block);
+				return;
+			}
+		}
+
+		// Pass 3: fuzzy line match (nearest within 5 lines)
+		for (const doc of docs) {
+			const blocks = findDiagramBlocks(doc.getText());
+			let best: DiagramBlock | null = null;
+			let bestDist = Infinity;
+			for (const b of blocks) {
+				const dist = line < b.startLine ? b.startLine - line
+					: line > b.endLine ? line - b.endLine : 0;
+				if (dist < bestDist) {
+					bestDist = dist;
+					best = b;
 				}
+			}
+			if (best && bestDist <= 5) {
+				openBlock(doc, best);
+				return;
+			}
+		}
 
-				// Strategy 2: diagram ID search across all open markdown documents.
-				// Diagram IDs are unique, so this reliably finds the correct file
-				// even when the doc URI parameter is missing.
-				const docs = vscode.workspace.textDocuments.filter(
-					d => d.languageId === "markdown"
-				);
+		vscode.window.showWarningMessage(
+			"Could not find the diagram. Make sure the Markdown file is open."
+		);
+	}
 
-				if (diagramIdParam) {
-					for (const doc of docs) {
-						const blocks = findDiagramBlocks(doc.getText());
-						const block = blocks.find(b => extractDiagramId(b.xml) === diagramIdParam);
-						if (block) {
-							openBlock(doc, block);
-							return;
-						}
-					}
-				}
-
-				// Strategy 3: search all open markdown documents by line number.
-				// We use multi-pass matching to avoid picking phantom blocks
-				// (e.g. documentation examples nested inside backtick fences).
-
-				// Pass 1: block index + line range must BOTH agree (highest confidence)
-				if (hasBlockIndex) {
-					for (const doc of docs) {
-						const blocks = findDiagramBlocks(doc.getText());
-						if (blockIndex < blocks.length) {
-							const b = blocks[blockIndex];
-							if (line >= b.startLine && line <= b.endLine) {
-								openBlock(doc, b);
-								return;
-							}
-						}
-					}
-				}
-
-				// Pass 2: exact line range only
-				for (const doc of docs) {
-					const blocks = findDiagramBlocks(doc.getText());
-					const block = blocks.find(b => line >= b.startLine && line <= b.endLine);
-					if (block) {
-						openBlock(doc, block);
-						return;
-					}
-				}
-
-				// Pass 3: fuzzy line match (nearest within 5 lines)
-				for (const doc of docs) {
-					const blocks = findDiagramBlocks(doc.getText());
-					let best: DiagramBlock | null = null;
-					let bestDist = Infinity;
-					for (const b of blocks) {
-						const dist = line < b.startLine ? b.startLine - line
-							: line > b.endLine ? line - b.endLine : 0;
-						if (dist < bestDist) {
-							bestDist = dist;
-							best = b;
-						}
-					}
-					if (best && bestDist <= 5) {
-						openBlock(doc, best);
-						return;
-					}
-				}
-
-				vscode.window.showWarningMessage(
-					"Could not find the diagram. Make sure the Markdown file is open."
-				);
-			},
-		})
-	);
+	registerUriRoute('/drawio-inline-editor', handleUriDIIE);
 
 	// Command: Edit Diagram
 	context.subscriptions.push(
